@@ -10,8 +10,6 @@ import { Provider } from 'react-redux';
 
 LogBox.ignoreAllLogs();
 
-//AppRegistry.registerComponent(appName, () => App);
-
 const createApp = () => (
   <Provider store={store}>
     <App />

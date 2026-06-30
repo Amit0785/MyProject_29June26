@@ -15,7 +15,6 @@ import {
   View,
 } from 'react-native';
 import { shallowEqual } from 'react-redux';
-import * as Yup from 'yup';
 import { useAppDispatch, useAppSelector } from '../store';
 import { Task, TaskFormRouteProp } from '../types';
 import { goBack } from '@app/navigation/RootNavigation';
@@ -25,22 +24,7 @@ import {
   moderateScale,
   verticalScale,
 } from '@app/utils/orientation';
-
-const validationSchema = Yup.object().shape({
-  title: Yup.string().trim().required('Task Title is mandatory.'),
-  description: Yup.string().nullable(),
-  category: Yup.string()
-    .oneOf(['work', 'personal', 'health', 'shopping', 'other'])
-    .required(),
-  priority: Yup.string().oneOf(['low', 'medium', 'high']).required(),
-  dueDate: Yup.string()
-    .nullable()
-    .test('is-date', 'Due date must be in YYYY-MM-DD format', value => {
-      if (!value) return true;
-      return /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(Date.parse(value));
-    }),
-  enableReminder: Yup.boolean().optional(),
-});
+import { taskValidationSchema } from '@app/utils/helpers/ValidationSchema';
 
 const TaskFormScreen: FC<TaskFormRouteProp> = ({ route }) => {
   const taskId = route.params?.taskId;
@@ -63,7 +47,7 @@ const TaskFormScreen: FC<TaskFormRouteProp> = ({ route }) => {
       enableReminder: !!existingTask,
     },
     enableReinitialize: true,
-    validationSchema,
+    validationSchema: taskValidationSchema,
     onSubmit: async values => {
       const payload = {
         title: values.title.trim(),
