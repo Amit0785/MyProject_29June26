@@ -8,6 +8,4 @@ declare module 'react-native-image-crop-picker' {
   const content: any;
   export default content;
 }
-declare module 'react-native-mmkv' {
-  export const MMKV: any;
-}
+

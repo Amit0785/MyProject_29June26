@@ -1,12 +1,12 @@
-import { MMKV } from 'react-native-mmkv';
+import { createMMKV } from 'react-native-mmkv';
 import { name } from '../../../app.json';
 
-const storage = new MMKV({
+const storage = createMMKV({
   id: `${name}-storage`,
   encryptionKey: 'encryption-key',
 });
 
-type Keys = 'token' | 'refresh-token' | 'onboarded'; // add more key
+type Keys = 'token' | 'refresh-token' | 'onboarded' | 'theme';
 
 const Storage = {
   setItem: (key: Keys, value: string): void => {
@@ -22,8 +22,9 @@ const Storage = {
   },
 
   removeItem: (key: Keys): void => {
-    storage.delete(key);
+    storage.remove(key);
   },
+
   clearAll: (): void => {
     storage.clearAll();
   },

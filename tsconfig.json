@@ -19,6 +19,6 @@
       "@store/*": ["./src/store/*"]
     }
   },
-  "include": ["src", "env.d.ts", "declaration.d.ts"],
+  "include": ["src", "App.tsx", "env.d.ts", "declaration.d.ts"],
   "exclude": ["**/node_modules", "**/Pods"]
 }

@@ -27,6 +27,7 @@ export interface ITextInputProps extends TextInputProps {
   maxLength?: number;
   autoCaps?: 'none' | 'sentences' | 'words' | 'characters';
   containerStyles?: ViewStyle;
+  inputContainerStyle?: ViewStyle;
   multiline?: boolean;
   editable?: boolean;
 }
@@ -43,7 +44,9 @@ const TextInputComponent: React.FC<ITextInputProps> = props => {
               props.multiline != null && props.multiline
                 ? moderateScale(120)
                 : moderateScale(50),
+            borderColor: props.error ? Colors.red : Colors.slate400,
           },
+          props.inputContainerStyle,
         ]}
       >
         {props.leftIcon && (
@@ -57,13 +60,14 @@ const TextInputComponent: React.FC<ITextInputProps> = props => {
             {
               width:
                 props.rightIcon && props.leftIcon
-                  ? '75%'
+                  ? '70%'
                   : !props.rightIcon && !props.leftIcon
-                  ? '100%'
-                  : props.rightIcon || props.leftIcon
-                  ? '92%'
-                  : '80%',
+                    ? '100%'
+                    : props.rightIcon || props.leftIcon
+                      ? '85%'
+                      : '80%',
             },
+            props.style,
           ]}
           textAlignVertical={props.multiline ? 'top' : 'center'}
           placeholder={props.placeholder}
@@ -112,8 +116,7 @@ const styles = StyleSheet.create({
     //backgroundColor: '#0f172a',
     borderRadius: 8,
     color: '#f8fafc',
-
-    fontSize: normalize(14),
+    fontSize: normalize(12),
   },
   inputContainer: {
     width: '100%',
@@ -131,6 +134,7 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1,
   },
   errorText: {
     //textAlign: 'center',

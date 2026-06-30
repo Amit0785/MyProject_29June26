@@ -1,5 +1,4 @@
-/* eslint-disable react-native/no-inline-styles */
-import { CDynamicHeader } from '@app/components';
+import { CDynamicHeader, TaskListItem } from '@app/components';
 import { navigate } from '@app/navigation/RootNavigation';
 import {
   deleteTaskAction,
@@ -7,7 +6,11 @@ import {
   setSearchQuery,
   updateTaskAction,
 } from '@app/store/slice/tasks.slice';
-import { verticalScale } from '@app/utils/orientation';
+import {
+  horizontalScale,
+  moderateScale,
+  verticalScale,
+} from '@app/utils/orientation';
 import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
@@ -18,158 +21,34 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { shallowEqual } from 'react-redux';
 import { notificationService } from '../services/notifications';
 import { useAppDispatch, useAppSelector } from '../store';
 import { Task } from '../types';
+import { Colors } from '@app/themes';
 
-// Memoized Individual List Cell to enforce high FlatList rendering performance
-const TaskListItem = React.memo(
-  ({
-    task,
-    onToggle,
-    onDelete,
-    onEdit,
-    theme,
-  }: {
-    task: Task;
-    onToggle: (task: Task) => void;
-    onDelete: (id: string) => void;
-    onEdit: (id: string) => void;
-    theme: 'light' | 'dark';
-  }) => {
-    const isDark = theme === 'dark';
-
-    const getPriorityColor = (p: string) => {
-      switch (p) {
-        case 'high':
-          return '#ef4444';
-        case 'medium':
-          return '#f59e0b';
-        default:
-          return '#10b981';
-      }
-    };
-
-    const getSyncIndicator = (status: string) => {
-      switch (status) {
-        case 'synced':
-          return '☁️'; // Synced to Cloud
-        case 'pending_create':
-          return '➕ ⏳'; // Pending create offline
-        case 'pending_update':
-          return '✏️ ⏳'; // Pending update offline
-        case 'pending_delete':
-          return '❌ ⏳'; // Pending delete offline
-        default:
-          return '';
-      }
-    };
-
-    const handleToggle = () => onToggle(task);
-    const handleEdit = () => onEdit(task.id);
-    const handleDelete = () => onDelete(task.id);
-
-    return (
-      <SafeAreaView
+const EmptyTaskList = React.memo(({ isDark }: { isDark: boolean }) => {
+  return (
+    <View style={styles.emptyContainer}>
+      <Text
         style={[
-          styles.taskCard,
-          { backgroundColor: isDark ? '#1e293b' : '#ffffff' },
-          !isDark && styles.taskCardLightShadow,
+          styles.emptyText,
+          { color: isDark ? Colors.slate400 : Colors.slate500 },
         ]}
       >
-        <TouchableOpacity onPress={handleToggle} style={styles.checkboxContainer}>
-          <View
-            style={[
-              styles.checkbox,
-              { borderColor: isDark ? '#64748b' : '#cbd5e1' },
-              task.isCompleted && styles.checkboxChecked,
-            ]}
-          >
-            {task.isCompleted && <Text style={styles.checkboxTick}>✓</Text>}
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={handleEdit} style={styles.taskDetails}>
-          <View style={styles.taskTitleRow}>
-            <Text
-              style={[
-                styles.taskTitle,
-                { color: isDark ? '#f8fafc' : '#0f172a' },
-                task.isCompleted && styles.taskTitleCompleted,
-              ]}
-            >
-              {task.title}
-            </Text>
-            <Text style={styles.syncStatus}>
-              {getSyncIndicator(task.syncStatus)}
-            </Text>
-          </View>
-
-          {task.description ? (
-            <Text
-              style={[
-                styles.taskDescription,
-                { color: isDark ? '#94a3b8' : '#64748b' },
-              ]}
-              numberOfLines={1}
-            >
-              {task.description}
-            </Text>
-          ) : null}
-
-          <View style={styles.metaRow}>
-            <View
-              style={[
-                styles.badge,
-                { backgroundColor: isDark ? '#334155' : '#e2e8f0' },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.badgeText,
-                  { color: isDark ? '#f8fafc' : '#475569' },
-                ]}
-              >
-                {task.category.toUpperCase()}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.badge,
-                { backgroundColor: getPriorityColor(task.priority) + '22' },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.badgeText,
-                  { color: getPriorityColor(task.priority) },
-                ]}
-              >
-                {task.priority.toUpperCase()}
-              </Text>
-            </View>
-            {task.dueDate ? (
-              <Text
-                style={[
-                  styles.dueDateText,
-                  { color: isDark ? '#64748b' : '#94a3b8' },
-                ]}
-              >
-                📅 {new Date(task.dueDate).toLocaleDateString()}
-              </Text>
-            ) : null}
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={handleDelete} style={styles.deleteBtn}>
-          <Text style={styles.deleteText}>🗑️</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  },
-);
+        No Tasks Registered.
+      </Text>
+      <Text
+        style={[
+          styles.emptySubtext,
+          { color: isDark ? Colors.slate500 : Colors.slate400 },
+        ]}
+      >
+        Hit "+" below to map a new task.
+      </Text>
+    </View>
+  );
+});
 
 const HomeScreen: FC = () => {
   const dispatch = useAppDispatch();
@@ -251,6 +130,11 @@ const HomeScreen: FC = () => {
     navigate('TaskForm', { taskId: id });
   }, []);
 
+  const renderEmptyComponent = useCallback(
+    () => <EmptyTaskList isDark={isDark} />,
+    [isDark],
+  );
+
   const renderItem: ListRenderItem<Task> = useCallback(
     ({ item }) => (
       <TaskListItem
@@ -268,7 +152,7 @@ const HomeScreen: FC = () => {
     <View
       style={[
         styles.container,
-        { backgroundColor: isDark ? '#0f172a' : '#f8fafc' },
+        { backgroundColor: isDark ? Colors.slate900 : Colors.slate50 },
       ]}
     >
       {/* Dynamic Header Component */}
@@ -295,20 +179,20 @@ const HomeScreen: FC = () => {
       <View
         style={[
           styles.searchSection,
-          { backgroundColor: isDark ? '#1e293b' : '#ffffff' },
+          { backgroundColor: isDark ? Colors.slate800 : Colors.white },
         ]}
       >
         <TextInput
           style={[
             styles.searchInput,
             {
-              backgroundColor: isDark ? '#0f172a' : '#f1f5f9',
-              color: isDark ? '#f8fafc' : '#0f172a',
-              borderColor: isDark ? '#334155' : '#cbd5e1',
+              backgroundColor: isDark ? Colors.slate900 : Colors.slate100,
+              color: isDark ? Colors.white : Colors.slate900,
+              borderColor: isDark ? Colors.slate700 : Colors.slate300,
             },
           ]}
           placeholder="Search task by title or description..."
-          placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+          placeholderTextColor={isDark ? Colors.slate500 : Colors.slate400}
           value={localSearchQuery}
           onChangeText={setLocalSearchQuery}
         />
@@ -319,8 +203,8 @@ const HomeScreen: FC = () => {
         style={[
           styles.filterTabs,
           {
-            backgroundColor: isDark ? '#1e293b' : '#ffffff',
-            borderBottomColor: isDark ? '#334155' : '#cbd5e1',
+            backgroundColor: isDark ? Colors.slate800 : Colors.white,
+            borderBottomColor: isDark ? Colors.slate700 : Colors.slate300,
           },
         ]}
       >
@@ -329,7 +213,7 @@ const HomeScreen: FC = () => {
             key={cat}
             style={[
               styles.tab,
-              { backgroundColor: isDark ? '#334155' : '#f1f5f9' },
+              { backgroundColor: isDark ? Colors.slate700 : Colors.slate100 },
               categoryFilter === cat &&
                 (isDark ? styles.tabActiveDark : styles.tabActiveLight),
             ]}
@@ -363,26 +247,7 @@ const HomeScreen: FC = () => {
           offset: 104 * index,
           index,
         })}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text
-              style={[
-                styles.emptyText,
-                { color: isDark ? '#94a3b8' : '#64748b' },
-              ]}
-            >
-              No Tasks Registered.
-            </Text>
-            <Text
-              style={[
-                styles.emptySubtext,
-                { color: isDark ? '#64748b' : '#94a3b8' },
-              ]}
-            >
-              Hit "+" below to map a new task.
-            </Text>
-          </View>
-        }
+        ListEmptyComponent={renderEmptyComponent}
       />
 
       {/* Floating Action Creator Button */}
@@ -405,64 +270,64 @@ const styles = StyleSheet.create({
   },
 
   offlineBanner: {
-    backgroundColor: '#ea580c',
-    paddingVertical: 6,
+    backgroundColor: Colors.warning,
+    paddingVertical: verticalScale(6),
     alignItems: 'center',
   },
   syncBanner: {
-    backgroundColor: '#0284c7',
-    paddingVertical: 6,
+    backgroundColor: Colors.info,
+    paddingVertical: verticalScale(6),
     alignItems: 'center',
   },
   bannerText: {
-    color: '#ffffff',
-    fontSize: 12,
+    color: Colors.white,
+    fontSize: moderateScale(12),
     fontWeight: '600',
   },
   syncBannerText: {
-    color: '#ffffff',
-    fontSize: 12,
+    color: Colors.white,
+    fontSize: moderateScale(12),
     fontWeight: '600',
   },
   searchSection: {
-    padding: 16,
+    padding: moderateScale(16),
   },
   searchInput: {
-    borderRadius: 8,
+    borderRadius: moderateScale(8),
     borderWidth: 1,
-    height: 44,
-    paddingHorizontal: 16,
-    fontSize: 14,
+    height: verticalScale(44),
+    paddingHorizontal: horizontalScale(16),
+    fontSize: moderateScale(14),
   },
   filterTabs: {
     flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: horizontalScale(12),
+    paddingVertical: verticalScale(12),
     borderBottomWidth: 1,
   },
   tab: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginHorizontal: 4,
+    paddingHorizontal: horizontalScale(12),
+    paddingVertical: verticalScale(6),
+    borderRadius: moderateScale(16),
+    marginHorizontal: horizontalScale(4),
   },
   tabActiveDark: {
-    backgroundColor: '#38bdf8',
+    backgroundColor: Colors.accent,
   },
   tabActiveLight: {
-    backgroundColor: '#0ea5e9',
+    backgroundColor: Colors.primary,
   },
   tabText: {
-    color: '#64748b',
+    color: Colors.slate500,
     fontSize: 10,
     fontWeight: '700',
   },
   tabTextActive: {
-    color: '#0f172a',
+    color: Colors.slate900,
   },
   listContent: {
-    padding: 16,
-    paddingBottom: 88,
+    padding: moderateScale(16),
+    paddingBottom: verticalScale(88),
   },
   taskCard: {
     borderRadius: 12,
@@ -491,11 +356,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#10b981',
-    borderColor: '#10b981',
+    backgroundColor: Colors.success,
+    borderColor: Colors.success,
   },
   checkboxTick: {
-    color: '#ffffff',
+    color: Colors.white,
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -513,7 +378,7 @@ const styles = StyleSheet.create({
   },
   taskTitleCompleted: {
     textDecorationLine: 'line-through',
-    color: '#94a3b8',
+    color: Colors.slate400,
   },
   syncStatus: {
     marginLeft: 8,
@@ -550,35 +415,35 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 80,
+    marginTop: verticalScale(80),
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: 'bold',
   },
   emptySubtext: {
-    fontSize: 13,
-    marginTop: 4,
+    fontSize: moderateScale(13),
+    marginTop: verticalScale(4),
   },
   fab: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#0ea5e9',
+    bottom: verticalScale(24),
+    right: horizontalScale(24),
+    width: moderateScale(56),
+    height: moderateScale(56),
+    borderRadius: moderateScale(28),
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: verticalScale(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: moderateScale(6),
     elevation: 8,
   },
   fabText: {
-    fontSize: 28,
-    color: '#ffffff',
+    fontSize: moderateScale(28),
+    color: Colors.white,
     fontWeight: 'bold',
   },
 });

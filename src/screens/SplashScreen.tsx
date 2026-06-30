@@ -1,15 +1,18 @@
+import React, { FC } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import React from 'react';
 import { Colors } from '@app/themes';
 import { normalize } from '@app/utils/orientation';
 
-export default function SplashScreen() {
+const SplashScreen: FC = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.textStyle}>✓ TASKSYNC</Text>
     </View>
   );
 }
+
+
+export default SplashScreen
 
 const styles = StyleSheet.create({
   container: {

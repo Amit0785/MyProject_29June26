@@ -49,11 +49,12 @@ const CButton: React.FC<IButtonProps> = props => {
 const styles = StyleSheet.create({
   container: {
     height: moderateScale(48),
-    borderRadius: moderateScale(80),
+    borderRadius: moderateScale(8),
     backgroundColor: Colors.button,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: moderateScale(30),
+
   },
   buttonText: {
     fontSize: moderateScale(16),

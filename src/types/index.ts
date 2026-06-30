@@ -44,6 +44,7 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   createdAt: string;
+  fcmToken?: string;
 }
 
 export type NetworkStatus = 'online' | 'offline';

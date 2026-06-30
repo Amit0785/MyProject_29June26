@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import {
   loginFailure,
   loginStart,
@@ -8,18 +9,30 @@ import {
   stringRequiredValidation,
 } from '@app/utils/helpers/ValidationSchema';
 import React, { FC, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'; // React Native styles simulated
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'; // React Native styles simulated
 import { useAppDispatch, useAppSelector } from '../store';
 
 import { CButton, TextInputComponent } from '@app/components';
-import { Colors } from '@app/themes';
-import { EyeClose, EyeOpen } from '@app/themes/Images';
 import { ILoginFormValues } from '@app/types';
-import { moderateScale } from '@app/utils/orientation';
+import {
+  horizontalScale,
+  verticalScale,
+  moderateScale,
+  normalize,
+} from '@app/utils/orientation';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import { useNotifications } from '@app/utils/context/notificationContext';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { shallowEqual } from 'react-redux';
 
 const validationSchema = Yup.object().shape({
   email: emailValidation,
@@ -29,10 +42,16 @@ const validationSchema = Yup.object().shape({
 const LoginScreen: FC = () => {
   const [isRegistering, setIsRegistering] = useState<boolean>(false);
 
-  const [visiblePassword, setVisiblePassword] = useState<boolean>(true);
+  const [visiblePassword, setVisiblePassword] = useState<boolean>(false);
 
   const dispatch = useAppDispatch();
-  const { isLoading, error } = useAppSelector(state => state.auth);
+  const { isLoading, error } = useAppSelector(
+    state => state.auth,
+    shallowEqual,
+  );
+  const theme = useAppSelector(state => state.tasks.theme, shallowEqual);
+  const isDark = theme === 'dark';
+  const { fcmToken, getFCMToken } = useNotifications();
 
   const initialValues: ILoginFormValues = {
     email: '',
@@ -42,43 +61,53 @@ const LoginScreen: FC = () => {
   const handleAuth = async () => {
     dispatch(loginStart());
     try {
-      // Real React Native Firebase implementation:
+      let response;
       if (isRegistering) {
-        const credential = await auth().createUserWithEmailAndPassword(
+        response = await auth().createUserWithEmailAndPassword(
           formik.values.email,
           formik.values.password,
-        );
-        dispatch(
-          loginSuccess({
-            uid: credential?.user?.uid,
-            email: credential?.user?.email ?? '',
-            createdAt: new Date().toISOString(),
-          }),
         );
       } else {
-        const credential = await auth().signInWithEmailAndPassword(
+        response = await auth().signInWithEmailAndPassword(
           formik.values.email,
           formik.values.password,
-        );
-        dispatch(
-          loginSuccess({
-            uid: credential.user.uid,
-            email: credential?.user?.email ?? '',
-            createdAt: new Date().toISOString(),
-          }),
         );
       }
 
-      // Mimicking successful callback
-      // setTimeout(() => {
-      //   dispatch(
-      //     loginSuccess({
-      //       uid: 'usr_' + Date.now(),
-      //       email,
-      //       createdAt: new Date().toISOString(),
-      //     }),
-      //   );
-      // }, 1000);
+      let token = fcmToken;
+      if (!token) {
+        try {
+          token = (await getFCMToken()) || '';
+        } catch (tokenErr) {
+          console.log(
+            '[LoginScreen] Error getting FCM Token from context:',
+            tokenErr,
+          );
+        }
+      }
+
+      const userId = response.user.uid;
+      const userEmail = response.user.email || '';
+
+      // Save/associate token in Firestore 'users' collection
+      await firestore().collection('users').doc(userId).set(
+        {
+          uid: userId,
+          email: userEmail,
+          fcmToken: token,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      );
+
+      dispatch(
+        loginSuccess({
+          uid: userId,
+          email: userEmail,
+          createdAt: new Date().toISOString(),
+          fcmToken: token || undefined,
+        }),
+      );
     } catch (err: any) {
       dispatch(loginFailure(err.message || 'Authentication failed.'));
     }
@@ -91,14 +120,37 @@ const LoginScreen: FC = () => {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? '#0f172a' : '#f8fafc' },
+      ]}
+    >
       <View style={styles.logoContainer}>
         <Text style={styles.logoText}>✓ TaskSync</Text>
-        <Text style={styles.taglineText}>Offline-First Task Management</Text>
+        <Text
+          style={[
+            styles.taglineText,
+            { color: isDark ? '#64748b' : '#475569' },
+          ]}
+        >
+          Offline-First Task Management
+        </Text>
       </View>
 
-      <View style={styles.formContainer}>
-        <Text style={styles.headerText}>
+      <View
+        style={[
+          styles.formContainer,
+          {
+            backgroundColor: isDark ? '#1e293b' : '#ffffff',
+            shadowOpacity: isDark ? 0.3 : 0.05,
+            elevation: isDark ? 8 : 3,
+          },
+        ]}
+      >
+        <Text
+          style={[styles.headerText, { color: isDark ? '#f8fafc' : '#0f172a' }]}
+        >
           {isRegistering ? 'Create Account' : 'Sign In'}
         </Text>
 
@@ -107,12 +159,18 @@ const LoginScreen: FC = () => {
         <TextInputComponent
           label={'Email'}
           placeholder={'Email Address'}
+          placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
           keyboardType={'email-address'}
           onChangeText={formik.handleChange('email')}
           value={formik.values.email}
           error={formik.touched.email && formik.errors.email}
           autoCaps={'none'}
-          //containerStyles={styles.wP}
+          style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
+          containerStyles={{ marginTop: 0, marginBottom: verticalScale(16) }}
+          inputContainerStyle={{
+            backgroundColor: isDark ? '#0f172a' : '#f1f5f9',
+            borderColor: isDark ? '#334155' : '#cbd5e1',
+          }}
         />
 
         <TextInputComponent
@@ -120,26 +178,32 @@ const LoginScreen: FC = () => {
           onChangeText={formik.handleChange('password')}
           value={formik.values.password}
           placeholder={'Password'}
+          placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
           rightIcon={
-            visiblePassword ? (
-              <EyeClose fill={Colors.white} />
-            ) : (
-              <EyeOpen
-                width={moderateScale(24)}
-                height={moderateScale(24)}
-                fill={Colors.white}
-              />
-            )
+            <Pressable style={styles.rightIconView} onPress={() => setVisiblePassword(!visiblePassword)}>
+              <Text
+                style={[styles.rightText, {
+                  color: isDark ? '#64748b' : '#94a3b8',
+
+                }]}
+              >
+                {visiblePassword ? 'Hide' : 'Show'}
+              </Text>
+            </Pressable>
           }
-          secure={visiblePassword}
-          onPressIcon={() => setVisiblePassword(!visiblePassword)}
+          secure={!visiblePassword}
+          // onPressIcon={() => setVisiblePassword(!visiblePassword)}
           keyboardType={'default'}
           error={formik.touched.password && formik.errors.password}
-          //containerStyles={styles.wP}
+          style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
+          containerStyles={{ marginTop: 0, marginBottom: verticalScale(16) }}
+          inputContainerStyle={{
+            backgroundColor: isDark ? '#0f172a' : '#f1f5f9',
+            borderColor: isDark ? '#334155' : '#cbd5e1',
+          }}
         />
 
         <CButton
-          //buttonContainerStyle={styles.wP}
           onPress={formik.handleSubmit}
           buttonText={isRegistering ? 'Sign Up' : 'Log In'}
           disabled={isLoading}
@@ -150,7 +214,12 @@ const LoginScreen: FC = () => {
           onPress={() => setIsRegistering(!isRegistering)}
           style={styles.switchButton}
         >
-          <Text style={styles.switchText}>
+          <Text
+            style={[
+              styles.switchText,
+              { color: isDark ? '#94a3b8' : '#64748b' },
+            ]}
+          >
             {isRegistering
               ? 'Already have an account? Sign In'
               : "Don't have an account? Sign Up"}
@@ -168,60 +237,69 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0f172a',
     justifyContent: 'center',
-    padding: 24,
+    padding: horizontalScale(24),
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: verticalScale(40),
   },
   logoText: {
-    fontSize: 32,
+    fontSize: normalize(32),
     fontWeight: 'bold',
     color: '#38bdf8',
   },
   taglineText: {
-    fontSize: 14,
+    fontSize: normalize(14),
     color: '#64748b',
-    marginTop: 8,
+    marginTop: verticalScale(8),
   },
   wP: {
     width: '90%',
   },
   formContainer: {
     backgroundColor: '#1e293b',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: moderateScale(16),
+    padding: horizontalScale(24),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: verticalScale(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowRadius: moderateScale(10),
     elevation: 8,
   },
   headerText: {
-    fontSize: 20,
+    fontSize: normalize(20),
     fontWeight: 'bold',
     color: '#f8fafc',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
     textAlign: 'center',
   },
 
   buttonText: {
     color: '#0f172a',
-    fontSize: 16,
+    fontSize: normalize(16),
     fontWeight: 'bold',
   },
   switchButton: {
-    marginTop: 16,
+    marginTop: verticalScale(16),
     alignItems: 'center',
   },
   switchText: {
     color: '#94a3b8',
-    fontSize: 13,
+    fontSize: normalize(13),
   },
   errorText: {
     color: '#ef4444',
-    fontSize: 13,
+    fontSize: normalize(13),
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
   },
+  rightIconView: {
+
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: horizontalScale(10),
+  },
+  rightText: {
+    fontSize: normalize(10),
+  }
 });

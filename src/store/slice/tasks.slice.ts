@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { localDB } from '@app/database/sqlite';
 import { Task, NetworkStatus, AppTheme } from '@app/types';
 import firestore from '@react-native-firebase/firestore';
+import Storage from '@app/utils/storage';
 
 interface TasksState {
   items: Task[];
@@ -174,7 +175,14 @@ export const tasksSlice = createSlice({
     },
 
     toggleTheme: state => {
-      state.theme = state.theme === 'light' ? 'dark' : 'light';
+      const nextTheme = state.theme === 'light' ? 'dark' : 'light';
+      state.theme = nextTheme;
+      Storage.setItem('theme', nextTheme);
+    },
+
+    setThemeAction: (state, action: PayloadAction<AppTheme>) => {
+      state.theme = action.payload;
+      Storage.setItem('theme', action.payload);
     },
   },
 });
@@ -189,6 +197,7 @@ export const {
   setCategoryFilter,
   setSearchQuery,
   toggleTheme,
+  setThemeAction,
 } = tasksSlice.actions;
 
 export default tasksSlice.reducer;
