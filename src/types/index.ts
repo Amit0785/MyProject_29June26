@@ -1,3 +1,5 @@
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
 export interface ILoginFormValues {
   email: string;
   password: string;
@@ -10,6 +12,11 @@ export type RootStackParamList = {
   TaskForm: { taskId?: string } | undefined;
 };
 
+export type ScreenProps<T extends keyof RootStackParamList> = {
+  navigation: StackNavigationProp<RootStackParamList, T>;
+  route: RouteProp<RootStackParamList, T>;
+};
+export type TaskFormRouteProp = ScreenProps<'TaskForm'>;
 export interface Task {
   id: string; // UUID
   userId: string;

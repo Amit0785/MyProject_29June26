@@ -1,14 +1,14 @@
+/* eslint-disable react-native/no-inline-styles */
+import { CDynamicHeader } from '@app/components';
 import { navigate } from '@app/navigation/RootNavigation';
-import { logout } from '@app/store/slice/auth.slice';
-import auth from '@react-native-firebase/auth';
 import {
   deleteTaskAction,
   setCategoryFilter,
   setSearchQuery,
-  toggleTheme,
   updateTaskAction,
 } from '@app/store/slice/tasks.slice';
-import React, { useCallback, useMemo } from 'react';
+import { verticalScale } from '@app/utils/orientation';
+import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   ListRenderItem,
@@ -18,9 +18,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSelector } from 'react-redux';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { shallowEqual } from 'react-redux';
 import { notificationService } from '../services/notifications';
-import { RootState, useAppDispatch } from '../store';
+import { useAppDispatch, useAppSelector } from '../store';
 import { Task } from '../types';
 
 // Memoized Individual List Cell to enforce high FlatList rendering performance
@@ -33,9 +34,9 @@ const TaskListItem = React.memo(
     theme,
   }: {
     task: Task;
-    onToggle: () => void;
-    onDelete: () => void;
-    onEdit: () => void;
+    onToggle: (task: Task) => void;
+    onDelete: (id: string) => void;
+    onEdit: (id: string) => void;
     theme: 'light' | 'dark';
   }) => {
     const isDark = theme === 'dark';
@@ -66,15 +67,19 @@ const TaskListItem = React.memo(
       }
     };
 
+    const handleToggle = () => onToggle(task);
+    const handleEdit = () => onEdit(task.id);
+    const handleDelete = () => onDelete(task.id);
+
     return (
-      <View
+      <SafeAreaView
         style={[
           styles.taskCard,
           { backgroundColor: isDark ? '#1e293b' : '#ffffff' },
           !isDark && styles.taskCardLightShadow,
         ]}
       >
-        <TouchableOpacity onPress={onToggle} style={styles.checkboxContainer}>
+        <TouchableOpacity onPress={handleToggle} style={styles.checkboxContainer}>
           <View
             style={[
               styles.checkbox,
@@ -86,7 +91,7 @@ const TaskListItem = React.memo(
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={onEdit} style={styles.taskDetails}>
+        <TouchableOpacity onPress={handleEdit} style={styles.taskDetails}>
           <View style={styles.taskTitleRow}>
             <Text
               style={[
@@ -158,15 +163,15 @@ const TaskListItem = React.memo(
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={onDelete} style={styles.deleteBtn}>
+        <TouchableOpacity onPress={handleDelete} style={styles.deleteBtn}>
           <Text style={styles.deleteText}>🗑️</Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   },
 );
 
-export default function HomeScreen({ navigation }: any) {
+const HomeScreen: FC = () => {
   const dispatch = useAppDispatch();
 
   const {
@@ -177,9 +182,27 @@ export default function HomeScreen({ navigation }: any) {
     isSyncing,
     syncingProgressMessage,
     theme,
-  } = useSelector((state: RootState) => state.tasks);
+  } = useAppSelector(state => state.tasks, shallowEqual);
 
   const isDark = theme === 'dark';
+
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+
+  // Sync local query when store query changes
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery);
+  }, [searchQuery]);
+
+  // Debounce the search query dispatch to Redux
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      dispatch(setSearchQuery(localSearchQuery));
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [localSearchQuery, dispatch]);
 
   // Filter and search logic combined
   const filteredTasks = useMemo(() => {
@@ -224,17 +247,21 @@ export default function HomeScreen({ navigation }: any) {
     [dispatch],
   );
 
+  const handleEdit = useCallback((id: string) => {
+    navigate('TaskForm', { taskId: id });
+  }, []);
+
   const renderItem: ListRenderItem<Task> = useCallback(
     ({ item }) => (
       <TaskListItem
         task={item}
-        onToggle={() => toggleTask(item)}
-        onDelete={() => deleteTask(item.id)}
-        onEdit={() => navigate('TaskForm', { taskId: item.id })}
+        onToggle={toggleTask}
+        onDelete={deleteTask}
+        onEdit={handleEdit}
         theme={theme}
       />
     ),
-    [toggleTask, deleteTask, theme],
+    [toggleTask, deleteTask, handleEdit, theme],
   );
 
   return (
@@ -245,79 +272,8 @@ export default function HomeScreen({ navigation }: any) {
       ]}
     >
       {/* Dynamic Header Component */}
-      <View
-        style={[
-          styles.headerContainer,
-          {
-            backgroundColor: isDark ? '#1e293b' : '#ffffff',
-            borderBottomColor: isDark ? '#334155' : '#e2e8f0',
-          },
-          !isDark && styles.headerLightShadow,
-        ]}
-      >
-        <View style={styles.headerLeft}>
-          <Text
-            style={[
-              styles.headerLogo,
-              { color: isDark ? '#38bdf8' : '#0ea5e9' },
-            ]}
-          >
-            ✓ TaskSync
-          </Text>
-          <View
-            style={[
-              styles.connectionPill,
-              {
-                backgroundColor:
-                  networkStatus === 'online' ? '#10b98122' : '#f9731622',
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.connectionPillText,
-                { color: networkStatus === 'online' ? '#10b981' : '#f97316' },
-              ]}
-            >
-              {networkStatus === 'online' ? '● Online' : '🔌 Offline'}
-            </Text>
-          </View>
-        </View>
 
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            onPress={() => dispatch(toggleTheme())}
-            style={[
-              styles.headerBtn,
-              { backgroundColor: isDark ? '#0f172a' : '#f1f5f9' },
-            ]}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.headerBtnIcon}>{isDark ? '☀️' : '🌙'}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={async () => {
-              try {
-                await auth().signOut();
-              } catch (err) {
-                console.error('Error signing out:', err);
-              }
-              dispatch(logout());
-            }}
-            style={[
-              styles.headerBtn,
-              {
-                backgroundColor: isDark ? '#0f172a' : '#f1f5f9',
-                marginLeft: 10,
-              },
-            ]}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.headerBtnIcon}>🚪</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <CDynamicHeader isDark={isDark} networkStatus={networkStatus} />
 
       {/* Offline Connectivity Telemetry Banner */}
       {networkStatus === 'offline' && (
@@ -353,8 +309,8 @@ export default function HomeScreen({ navigation }: any) {
           ]}
           placeholder="Search task by title or description..."
           placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-          value={searchQuery}
-          onChangeText={text => dispatch(setSearchQuery(text))}
+          value={localSearchQuery}
+          onChangeText={setLocalSearchQuery}
         />
       </View>
 
@@ -432,67 +388,22 @@ export default function HomeScreen({ navigation }: any) {
       {/* Floating Action Creator Button */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate('TaskForm')}
+        onPress={() => navigate('TaskForm')}
         activeOpacity={0.8}
       >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
     </View>
   );
-}
+};
 
+export default HomeScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: verticalScale(15),
   },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  headerLightShadow: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerLogo: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  connectionPill: {
-    marginLeft: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  connectionPillText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerBtnIcon: {
-    fontSize: 16,
-  },
+
   offlineBanner: {
     backgroundColor: '#ea580c',
     paddingVertical: 6,

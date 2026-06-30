@@ -1,107 +1,112 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
-} from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+/* eslint-disable react-native/no-inline-styles */
+import { notificationService } from '@app/services/notifications';
 import {
   createTaskAction,
   updateTaskAction,
 } from '@app/store/slice/tasks.slice';
-import { RootState } from '../store';
-import { Task } from '../types';
-import { notificationService } from '@app/services/notifications';
+import { useFormik } from 'formik';
+import React, { FC } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { shallowEqual } from 'react-redux';
+import * as Yup from 'yup';
+import { useAppDispatch, useAppSelector } from '../store';
+import { Task, TaskFormRouteProp } from '../types';
 
-export default function TaskFormScreen({ route, navigation }: any) {
+const validationSchema = Yup.object().shape({
+  title: Yup.string().trim().required('Task Title is mandatory.'),
+  description: Yup.string().nullable(),
+  category: Yup.string()
+    .oneOf(['work', 'personal', 'health', 'shopping', 'other'])
+    .required(),
+  priority: Yup.string().oneOf(['low', 'medium', 'high']).required(),
+  dueDate: Yup.string()
+    .nullable()
+    .test('is-date', 'Due date must be in YYYY-MM-DD format', value => {
+      if (!value) return true;
+      return /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(Date.parse(value));
+    }),
+  enableReminder: Yup.boolean().optional(),
+});
+
+const TaskFormScreen: FC<TaskFormRouteProp> = ({ route, navigation }) => {
   const taskId = route.params?.taskId;
-  const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { items, theme } = useSelector((state: RootState) => state.tasks);
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector(state => state.auth, shallowEqual);
+  const { items, theme } = useAppSelector(state => state.tasks, shallowEqual);
 
   const existingTask = items.find(t => t.id === taskId);
   const isDark = theme === 'dark';
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<
-    'work' | 'personal' | 'health' | 'shopping' | 'other'
-  >('work');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [dueDate, setDueDate] = useState('');
-  const [enableReminder, setEnableReminder] = useState(false);
+  const formik = useFormik({
+    initialValues: {
+      title: existingTask?.title || '',
+      description: existingTask?.description || '',
+      category: existingTask?.category || 'work',
+      priority: existingTask?.priority || 'medium',
+      dueDate: existingTask?.dueDate
+        ? existingTask.dueDate.substring(0, 10)
+        : '',
+      enableReminder: !!existingTask,
+    },
+    enableReinitialize: true,
+    validationSchema,
+    onSubmit: async values => {
+      const payload = {
+        title: values.title.trim(),
+        description: values.description,
+        category: values.category,
+        priority: values.priority,
+        dueDate: values.dueDate
+          ? new Date(values.dueDate).toISOString()
+          : new Date().toISOString(),
+        userId: user?.uid || 'guest_user',
+      };
 
-  useEffect(() => {
-    if (existingTask) {
-      setTitle(existingTask.title);
-      setDescription(existingTask.description);
-      setCategory(existingTask.category);
-      setPriority(existingTask.priority);
-      setDueDate(
-        existingTask.dueDate ? existingTask.dueDate.substring(0, 10) : '',
-      );
-      setEnableReminder(true);
-    }
-  }, [existingTask]);
+      let id = taskId;
 
-  const handleSave = async () => {
-    if (!title) {
-      Alert.alert('Task Title is mandatory.');
-      return;
-    }
-
-    const payload = {
-      title,
-      description,
-      category,
-      priority,
-      dueDate: dueDate
-        ? new Date(dueDate).toISOString()
-        : new Date().toISOString(),
-      userId: user?.uid || 'guest_user',
-    };
-
-    let id = taskId;
-
-    if (existingTask) {
-      dispatch(updateTaskAction({ id, updates: payload }));
-    } else {
-      id = 'task_' + Date.now();
-      dispatch(
-        createTaskAction({
-          id,
-          isCompleted: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          ...payload,
-        }),
-      );
-    }
-
-    // Handle Local Notification Schedule Trigger
-    if (enableReminder && dueDate) {
-      const authGranted = await notificationService.requestPermissions();
-      if (authGranted) {
-        const fullTask: Task = {
-          id,
-          isCompleted: existingTask?.isCompleted || false,
-          createdAt: existingTask?.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          syncStatus: 'synced',
-          ...payload,
-        };
-        await notificationService.scheduleLocalTaskReminder(fullTask);
+      if (existingTask) {
+        dispatch(updateTaskAction({ id: id ?? '', updates: payload }));
+      } else {
+        id = 'task_' + Date.now();
+        dispatch(
+          createTaskAction({
+            id,
+            isCompleted: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            ...payload,
+          }),
+        );
       }
-    } else if (!enableReminder) {
-      await notificationService.cancelTaskReminder(id);
-    }
 
-    navigation.goBack();
-  };
+      // Handle Local Notification Schedule Trigger
+      if (values.enableReminder && values.dueDate) {
+        const authGranted = await notificationService.requestPermissions();
+        if (authGranted) {
+          const fullTask: Task = {
+            id: id ?? '',
+            isCompleted: existingTask?.isCompleted || false,
+            createdAt: existingTask?.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            syncStatus: 'synced',
+            ...payload,
+          };
+          await notificationService.scheduleLocalTaskReminder(fullTask);
+        }
+      } else if (!values.enableReminder && id) {
+        await notificationService.cancelTaskReminder(id);
+      }
+
+      navigation.goBack();
+    },
+  });
 
   const priorityColors = {
     low: '#10b981',
@@ -132,14 +137,23 @@ export default function TaskFormScreen({ route, navigation }: any) {
             {
               backgroundColor: isDark ? '#0f172a' : '#f1f5f9',
               color: isDark ? '#f8fafc' : '#0f172a',
-              borderColor: isDark ? '#334155' : '#cbd5e1',
+              borderColor:
+                formik.touched.title && formik.errors.title
+                  ? '#ef4444'
+                  : isDark
+                  ? '#334155'
+                  : '#cbd5e1',
             },
           ]}
           placeholder="e.g. Code database sync worker"
           placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-          value={title}
-          onChangeText={setTitle}
+          value={formik.values.title}
+          onChangeText={formik.handleChange('title')}
+          onBlur={formik.handleBlur('title')}
         />
+        {formik.touched.title && formik.errors.title && (
+          <Text style={styles.errorText}>{formik.errors.title}</Text>
+        )}
 
         <Text style={[styles.label, { color: isDark ? '#94a3b8' : '#64748b' }]}>
           DESCRIPTION / NOTES
@@ -156,8 +170,9 @@ export default function TaskFormScreen({ route, navigation }: any) {
           ]}
           placeholder="Provide structured notes details..."
           placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-          value={description}
-          onChangeText={setDescription}
+          value={formik.values.description}
+          onChangeText={formik.handleChange('description')}
+          onBlur={formik.handleBlur('description')}
           multiline
           numberOfLines={4}
         />
@@ -173,16 +188,16 @@ export default function TaskFormScreen({ route, navigation }: any) {
                 style={[
                   styles.optionBtn,
                   { backgroundColor: isDark ? '#334155' : '#f1f5f9' },
-                  category === cat && styles.optionBtnActive,
+                  formik.values.category === cat && styles.optionBtnActive,
                 ]}
-                onPress={() => setCategory(cat)}
+                onPress={() => formik.setFieldValue('category', cat)}
                 activeOpacity={0.7}
               >
                 <Text
                   style={[
                     styles.optionText,
                     { color: isDark ? '#94a3b8' : '#64748b' },
-                    category === cat && styles.optionTextActive,
+                    formik.values.category === cat && styles.optionTextActive,
                   ]}
                 >
                   {cat.toUpperCase()}
@@ -202,16 +217,18 @@ export default function TaskFormScreen({ route, navigation }: any) {
               style={[
                 styles.optionBtn,
                 { backgroundColor: isDark ? '#334155' : '#f1f5f9' },
-                priority === pri && { backgroundColor: priorityColors[pri] },
+                formik.values.priority === pri && {
+                  backgroundColor: priorityColors[pri],
+                },
               ]}
-              onPress={() => setPriority(pri)}
+              onPress={() => formik.setFieldValue('priority', pri)}
               activeOpacity={0.7}
             >
               <Text
                 style={[
                   styles.optionText,
                   { color: isDark ? '#94a3b8' : '#64748b' },
-                  priority === pri && styles.optionTextActive,
+                  formik.values.priority === pri && styles.optionTextActive,
                 ]}
               >
                 {pri.toUpperCase()}
@@ -229,14 +246,23 @@ export default function TaskFormScreen({ route, navigation }: any) {
             {
               backgroundColor: isDark ? '#0f172a' : '#f1f5f9',
               color: isDark ? '#f8fafc' : '#0f172a',
-              borderColor: isDark ? '#334155' : '#cbd5e1',
+              borderColor:
+                formik.touched.dueDate && formik.errors.dueDate
+                  ? '#ef4444'
+                  : isDark
+                  ? '#334155'
+                  : '#cbd5e1',
             },
           ]}
           placeholder="YYYY-MM-DD"
           placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
-          value={dueDate}
-          onChangeText={setDueDate}
+          value={formik.values.dueDate}
+          onChangeText={formik.handleChange('dueDate')}
+          onBlur={formik.handleBlur('dueDate')}
         />
+        {formik.touched.dueDate && formik.errors.dueDate && (
+          <Text style={styles.errorText}>{formik.errors.dueDate}</Text>
+        )}
 
         <View
           style={[
@@ -253,14 +279,22 @@ export default function TaskFormScreen({ route, navigation }: any) {
             SCHEDULE PUSH REMINDER
           </Text>
           <TouchableOpacity
-            style={[styles.switch, enableReminder && styles.switchOn]}
-            onPress={() => setEnableReminder(!enableReminder)}
+            style={[
+              styles.switch,
+              formik.values.enableReminder && styles.switchOn,
+            ]}
+            onPress={() =>
+              formik.setFieldValue(
+                'enableReminder',
+                !formik.values.enableReminder,
+              )
+            }
             activeOpacity={0.8}
           >
             <View
               style={[
                 styles.switchKnob,
-                enableReminder
+                formik.values.enableReminder
                   ? styles.switchKnobOn
                   : { backgroundColor: isDark ? '#94a3b8' : '#cbd5e1' },
               ]}
@@ -270,7 +304,7 @@ export default function TaskFormScreen({ route, navigation }: any) {
 
         <TouchableOpacity
           style={styles.saveBtn}
-          onPress={handleSave}
+          onPress={() => formik.handleSubmit()}
           activeOpacity={0.8}
         >
           <Text style={styles.saveBtnText}>SAVE TASK</Text>
@@ -278,8 +312,9 @@ export default function TaskFormScreen({ route, navigation }: any) {
       </View>
     </ScrollView>
   );
-}
+};
 
+export default TaskFormScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -377,5 +412,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 1,
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginTop: -16,
+    marginBottom: 16,
+    marginLeft: 4,
   },
 });

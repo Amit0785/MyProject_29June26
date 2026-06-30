@@ -10,7 +10,7 @@ import {
   StackScreenProps,
 } from '@react-navigation/stack';
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text } from 'react-native';
 import { useAppSelector, useAppDispatch } from '../store';
 import { RootStackParamList } from '../types';
 import { goBack, navigationRef } from './RootNavigation';
@@ -25,6 +25,11 @@ import {
   TaskFormScreen,
 } from '@app/screens';
 import { Colors } from '@app/themes';
+import {
+  moderateScale,
+  normalize,
+  verticalScale,
+} from '@app/utils/orientation';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const NavigationRouter = () => {
@@ -127,12 +132,13 @@ const NavigationRouter = () => {
               headerStyle: {
                 backgroundColor:
                   currentTheme === 'dark' ? Colors.slate900 : Colors.white,
-                height: 56,
+                paddingVertical: verticalScale(10),
+                alignItems: 'center',
               },
               headerTintColor:
                 currentTheme === 'dark' ? Colors.white : Colors.black,
               headerTitleStyle: {
-                fontSize: 15,
+                fontSize: normalize(15),
                 fontWeight: 'bold',
               },
               headerTitle: displayHeaderTitle(route),
@@ -151,14 +157,19 @@ export default NavigationRouter;
 
 const styles = StyleSheet.create({
   iconView: {
-    marginLeft: 16,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    marginLeft: moderateScale(16),
+    width: moderateScale(32),
+    height: moderateScale(32),
+    borderRadius: moderateScale(16),
     backgroundColor: Colors.slate800,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  backText: { color: Colors.primary, fontSize: 14, fontWeight: 'bold' },
+  backText: {
+    color: Colors.primary,
+    fontSize: normalize(14),
+    fontWeight: 'bold',
+    marginTop: Platform.OS === 'ios' ? 0 : normalize(-5),
+  },
 });

@@ -124,7 +124,10 @@ export class SyncManager {
         const localTask = localTasksList.find(t => t.id === remoteTask.id);
         if (!localTask) {
           await localDB.insertTask(remoteTask);
-        } else if (new Date(remoteTask.updatedAt).getTime() > new Date(localTask.updatedAt).getTime()) {
+        } else if (
+          localTask.syncStatus === 'synced' &&
+          new Date(remoteTask.updatedAt).getTime() > new Date(localTask.updatedAt).getTime()
+        ) {
           await localDB.insertTask(remoteTask); // Pull remote overwrite
         }
       }

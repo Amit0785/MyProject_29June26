@@ -33,7 +33,7 @@ export interface ITextInputProps extends TextInputProps {
 
 const TextInputComponent: React.FC<ITextInputProps> = props => {
   return (
-    <View style={[props.containerStyles, styles.container]}>
+    <View style={[styles.container, props.containerStyles]}>
       {/* {props.label && <Text style={styles.labelText}>{props.label}</Text>} */}
       <View
         style={[
@@ -111,8 +111,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.InterRegular,
     //backgroundColor: '#0f172a',
     borderRadius: 8,
-
-    paddingHorizontal: 16,
     color: '#f8fafc',
 
     fontSize: normalize(14),

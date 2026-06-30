@@ -19,6 +19,7 @@ import { moderateScale } from '@app/utils/orientation';
 import auth from '@react-native-firebase/auth';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const validationSchema = Yup.object().shape({
   email: emailValidation,
@@ -90,7 +91,7 @@ const LoginScreen: FC = () => {
   });
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.logoContainer}>
         <Text style={styles.logoText}>✓ TaskSync</Text>
         <Text style={styles.taglineText}>Offline-First Task Management</Text>
@@ -156,7 +157,7 @@ const LoginScreen: FC = () => {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

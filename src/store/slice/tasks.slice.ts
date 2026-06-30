@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { localDB } from '@app/database/sqlite';
-import { syncManager } from '@app/database/syncManager';
 import { Task, NetworkStatus, AppTheme } from '@app/types';
 import firestore from '@react-native-firebase/firestore';
 
@@ -81,11 +80,12 @@ export const tasksSlice = createSlice({
       const taskIndex = state.items.findIndex(t => t.id === id);
       if (taskIndex > -1) {
         const existingTask = state.items[taskIndex];
+        const updatedAt = new Date().toISOString();
         const updatedTask: Task = {
           ...existingTask,
           ...updates,
           syncStatus: isOnline ? 'synced' : 'pending_update',
-          updatedAt: new Date().toISOString(),
+          updatedAt,
         };
 
         // 1. Write to local database
@@ -96,14 +96,14 @@ export const tasksSlice = createSlice({
           localDB.addToQueue({
             taskId: id,
             action: 'UPDATE',
-            payload: JSON.stringify(updates),
+            payload: JSON.stringify({ ...updates, updatedAt }),
             timestamp: Date.now(),
           });
         } else {
           firestore()
             .collection('tasks')
             .doc(id)
-            .update(updates)
+            .update({ ...updates, updatedAt })
             .catch(err => console.error('[Firestore] Error updating task:', err));
         }
 
