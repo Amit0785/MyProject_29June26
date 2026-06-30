@@ -2,12 +2,6 @@
 
 TaskSync is a production-ready, cross-platform React Native application designed for high-performance task management with robust offline capability, automatic Firestore synchronization, theme support, local reminder scheduling, and multi-environment configuration.
 
-## ✨ Recent UI Enhancements
-
-- Home and Task Form screens now use orientation-aware scaling utilities for responsive spacing, sizing, and layout behavior across different screen sizes.
-- Shared theme color tokens from the centralized Colors palette are used to keep light/dark styling consistent across the app.
-- Form controls, filter tabs, and floating action buttons have been refined to provide a more polished and adaptive mobile experience.
-
 ---
 
 ## 📱 Architecture & Design Choices

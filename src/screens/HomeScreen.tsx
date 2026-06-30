@@ -9,6 +9,7 @@ import {
 import {
   horizontalScale,
   moderateScale,
+  normalize,
   verticalScale,
 } from '@app/utils/orientation';
 import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
@@ -373,7 +374,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   taskTitle: {
-    fontSize: 15,
+    fontSize: normalize(15),
     fontWeight: 'bold',
   },
   taskTitleCompleted: {

@@ -19,6 +19,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../store';
 
 import { CButton, TextInputComponent } from '@app/components';
+import { Colors } from '@app/themes';
 import { ILoginFormValues } from '@app/types';
 import {
   horizontalScale,
@@ -123,7 +124,7 @@ const LoginScreen: FC = () => {
     <SafeAreaView
       style={[
         styles.container,
-        { backgroundColor: isDark ? '#0f172a' : '#f8fafc' },
+        { backgroundColor: isDark ? Colors.slate900 : Colors.slate50 },
       ]}
     >
       <View style={styles.logoContainer}>
@@ -131,7 +132,7 @@ const LoginScreen: FC = () => {
         <Text
           style={[
             styles.taglineText,
-            { color: isDark ? '#64748b' : '#475569' },
+            { color: isDark ? Colors.slate500 : '#475569' },
           ]}
         >
           Offline-First Task Management
@@ -142,14 +143,17 @@ const LoginScreen: FC = () => {
         style={[
           styles.formContainer,
           {
-            backgroundColor: isDark ? '#1e293b' : '#ffffff',
+            backgroundColor: isDark ? Colors.slate800 : Colors.white,
             shadowOpacity: isDark ? 0.3 : 0.05,
             elevation: isDark ? 8 : 3,
           },
         ]}
       >
         <Text
-          style={[styles.headerText, { color: isDark ? '#f8fafc' : '#0f172a' }]}
+          style={[
+            styles.headerText,
+            { color: isDark ? Colors.white : Colors.slate900 },
+          ]}
         >
           {isRegistering ? 'Create Account' : 'Sign In'}
         </Text>
@@ -159,17 +163,17 @@ const LoginScreen: FC = () => {
         <TextInputComponent
           label={'Email'}
           placeholder={'Email Address'}
-          placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+          placeholderTextColor={isDark ? Colors.slate500 : Colors.slate400}
           keyboardType={'email-address'}
           onChangeText={formik.handleChange('email')}
           value={formik.values.email}
           error={formik.touched.email && formik.errors.email}
           autoCaps={'none'}
-          style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
+          style={{ color: isDark ? Colors.white : Colors.slate900 }}
           containerStyles={{ marginTop: 0, marginBottom: verticalScale(16) }}
           inputContainerStyle={{
-            backgroundColor: isDark ? '#0f172a' : '#f1f5f9',
-            borderColor: isDark ? '#334155' : '#cbd5e1',
+            backgroundColor: isDark ? Colors.slate900 : Colors.slate100,
+            borderColor: isDark ? Colors.slate700 : Colors.slate300,
           }}
         />
 
@@ -178,14 +182,19 @@ const LoginScreen: FC = () => {
           onChangeText={formik.handleChange('password')}
           value={formik.values.password}
           placeholder={'Password'}
-          placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+          placeholderTextColor={isDark ? Colors.slate500 : Colors.slate400}
           rightIcon={
-            <Pressable style={styles.rightIconView} onPress={() => setVisiblePassword(!visiblePassword)}>
+            <Pressable
+              style={styles.rightIconView}
+              onPress={() => setVisiblePassword(!visiblePassword)}
+            >
               <Text
-                style={[styles.rightText, {
-                  color: isDark ? '#64748b' : '#94a3b8',
-
-                }]}
+                style={[
+                  styles.rightText,
+                  {
+                    color: isDark ? Colors.slate500 : Colors.slate400,
+                  },
+                ]}
               >
                 {visiblePassword ? 'Hide' : 'Show'}
               </Text>
@@ -198,8 +207,8 @@ const LoginScreen: FC = () => {
           style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
           containerStyles={{ marginTop: 0, marginBottom: verticalScale(16) }}
           inputContainerStyle={{
-            backgroundColor: isDark ? '#0f172a' : '#f1f5f9',
-            borderColor: isDark ? '#334155' : '#cbd5e1',
+            backgroundColor: isDark ? Colors.slate900 : Colors.slate100,
+            borderColor: isDark ? Colors.slate700 : Colors.slate300,
           }}
         />
 
@@ -213,11 +222,12 @@ const LoginScreen: FC = () => {
         <TouchableOpacity
           onPress={() => setIsRegistering(!isRegistering)}
           style={styles.switchButton}
+          activeOpacity={0.8}
         >
           <Text
             style={[
               styles.switchText,
-              { color: isDark ? '#94a3b8' : '#64748b' },
+              { color: isDark ? Colors.slate400 : Colors.slate500 },
             ]}
           >
             {isRegistering
@@ -235,7 +245,7 @@ export default LoginScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: Colors.slate900,
     justifyContent: 'center',
     padding: horizontalScale(24),
   },
@@ -246,21 +256,21 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: normalize(32),
     fontWeight: 'bold',
-    color: '#38bdf8',
+    color: Colors.button,
   },
   taglineText: {
     fontSize: normalize(14),
-    color: '#64748b',
+    color: Colors.slate500,
     marginTop: verticalScale(8),
   },
   wP: {
     width: '90%',
   },
   formContainer: {
-    backgroundColor: '#1e293b',
+    backgroundColor: Colors.slate800,
     borderRadius: moderateScale(16),
     padding: horizontalScale(24),
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: verticalScale(4) },
     shadowOpacity: 0.3,
     shadowRadius: moderateScale(10),
@@ -269,13 +279,13 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: normalize(20),
     fontWeight: 'bold',
-    color: '#f8fafc',
+    color: Colors.white,
     marginBottom: verticalScale(20),
     textAlign: 'center',
   },
 
   buttonText: {
-    color: '#0f172a',
+    color: Colors.slate900,
     fontSize: normalize(16),
     fontWeight: 'bold',
   },
@@ -284,22 +294,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   switchText: {
-    color: '#94a3b8',
+    color: Colors.slate400,
     fontSize: normalize(13),
   },
   errorText: {
-    color: '#ef4444',
+    color: Colors.red,
     fontSize: normalize(13),
     textAlign: 'center',
     marginBottom: verticalScale(16),
   },
   rightIconView: {
-
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: horizontalScale(10),
   },
   rightText: {
     fontSize: normalize(10),
-  }
+  },
 });
