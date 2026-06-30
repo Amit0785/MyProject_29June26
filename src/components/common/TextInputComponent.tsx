@@ -49,23 +49,11 @@ const TextInputComponent: React.FC<ITextInputProps> = props => {
           props.inputContainerStyle,
         ]}
       >
-        {props.leftIcon && (
-          <View style={{ marginRight: moderateScale(8) }}>
-            {props.leftIcon}
-          </View>
-        )}
         <TextInput
           style={[
             styles.textInputContainer,
             {
-              width:
-                props.rightIcon && props.leftIcon
-                  ? '70%'
-                  : !props.rightIcon && !props.leftIcon
-                    ? '100%'
-                    : props.rightIcon || props.leftIcon
-                      ? '85%'
-                      : '80%',
+              width: props.rightIcon ? '77%' : '100%',
             },
             props.style,
           ]}
@@ -130,7 +118,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   rightIconPressContainer: {
-    width: moderateScale(40),
+    //width: moderateScale(80),
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',

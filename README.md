@@ -171,3 +171,12 @@ yarn ios:dev          # Development variables loaded
 yarn ios:staging      # Staging variables loaded
 yarn ios:prod         # Production variables loaded
 ```
+
+---
+
+## ⚠️ Known Limitations & Edge Cases
+
+1. **Local DB Lockups**: On older Android models, concurrent background database writes (such as incoming push notification worker logs + user actions) may cause standard SQLite lockups. The implementation prevents this by wrapping writes in serialized async mutexes.
+2. **Deep Synchronization Merge Conflicts**: In a multi-user collaborative environment, if two users modify the exact same task title offline, "Last-Write-Wins" will silently override the earlier edit. A robust solution would prompt the user with a visual diff screen, which is currently out of scope for this version.
+3. **Battery Saving Restrictions**: In iOS and Android, battery-saver modes can delay or terminate background SyncManagers. Offline tasks will only sync when the user opens or active-resumes the application.
+4. **Interactive Sandbox Preview Constraints**: When running this repository inside a web-based sandbox environment (like the AI Studio container preview), native-only code structures such as `SQLite` and real device-level `APNs/FCM` local alerts are shimmed using highly realistic Web LocalStorage APIs and custom Redux notification listeners. The underlying production-ready React Native native wrappers remain fully present in the codebase.

@@ -1,13 +1,13 @@
+import { Colors } from '@app/themes';
+import { moderateScale, verticalScale } from '@app/utils/orientation';
+import React from 'react';
 import {
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
   ViewStyle,
 } from 'react-native';
-import React from 'react';
-import { moderateScale } from '@app/utils/orientation';
-import { Colors, Fonts } from '@app/themes';
 
 export interface IButtonProps {
   buttonText?: string;
@@ -30,17 +30,7 @@ const CButton: React.FC<IButtonProps> = props => {
       {props.loading != null && props.loading ? (
         <ActivityIndicator color={Colors.white} />
       ) : (
-        <Text
-          style={[
-            styles.buttonText,
-            {
-              color: props.labelColor ?? '#0f172a',
-              fontFamily: props.labelFont ?? Fonts.InterRegular,
-            },
-          ]}
-        >
-          {props.buttonText}
-        </Text>
+        <Text style={[styles.buttonText]}>{props.buttonText}</Text>
       )}
     </TouchableOpacity>
   );
@@ -48,17 +38,19 @@ const CButton: React.FC<IButtonProps> = props => {
 
 const styles = StyleSheet.create({
   container: {
-    height: moderateScale(48),
-    borderRadius: moderateScale(8),
-    backgroundColor: Colors.button,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginTop: moderateScale(30),
 
+    backgroundColor: Colors.primary,
+    borderRadius: moderateScale(8),
+    height: verticalScale(50),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   buttonText: {
+    color: Colors.white,
     fontSize: moderateScale(16),
-    color: '#0f172a',
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
 });
 

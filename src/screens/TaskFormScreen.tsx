@@ -44,7 +44,7 @@ const TaskFormScreen: FC<TaskFormRouteProp> = ({ route }) => {
       dueDate: existingTask?.dueDate
         ? existingTask.dueDate.substring(0, 10)
         : '',
-      enableReminder: !!existingTask,
+      enableReminder: existingTask?.enableReminder || false,
     },
     enableReinitialize: true,
     validationSchema: taskValidationSchema,
@@ -54,6 +54,7 @@ const TaskFormScreen: FC<TaskFormRouteProp> = ({ route }) => {
         description: values.description,
         category: values.category,
         priority: values.priority,
+        enableReminder: values.enableReminder,
         dueDate: values.dueDate
           ? new Date(values.dueDate).toISOString()
           : new Date().toISOString(),
@@ -301,20 +302,12 @@ const TaskFormScreen: FC<TaskFormRouteProp> = ({ route }) => {
                   : {
                       backgroundColor: isDark
                         ? Colors.slate400
-                        : Colors.slate300,
+                        : Colors.slate500,
                     },
               ]}
             />
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={styles.saveBtn}
-          onPress={() => formik.handleSubmit()}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.saveBtnText}>SAVE TASK</Text>
-        </TouchableOpacity>
 
         <CButton onPress={formik.handleSubmit} buttonText={'SAVE TASK'} />
       </View>
@@ -408,19 +401,7 @@ const styles = StyleSheet.create({
     transform: [{ translateX: horizontalScale(22) }],
     backgroundColor: Colors.white,
   },
-  saveBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: moderateScale(8),
-    height: verticalScale(50),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  saveBtnText: {
-    color: Colors.white,
-    fontSize: moderateScale(16),
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
+
   errorText: {
     color: Colors.red,
     fontSize: moderateScale(12),

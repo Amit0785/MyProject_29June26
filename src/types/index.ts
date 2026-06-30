@@ -29,6 +29,7 @@ export interface Task {
   createdAt: string; // ISO String
   updatedAt: string; // ISO String
   syncStatus: 'synced' | 'pending_create' | 'pending_update' | 'pending_delete';
+  enableReminder: boolean;
 }
 
 export interface SyncQueueItem {

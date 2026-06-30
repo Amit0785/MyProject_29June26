@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   rightIconView: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: horizontalScale(10),
+    //  paddingHorizontal: horizontalScale(10),
   },
   rightText: {
     fontSize: normalize(10),

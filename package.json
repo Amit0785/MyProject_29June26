@@ -8,6 +8,7 @@
     "lint": "eslint .",
     "start": "react-native start --reset-cache",
     "test": "jest",
+    "clean": "cd android && ./gradlew clean && cd ..",
     "build": "cd android && ./gradlew assembleRelease && cd ..",
     "build:dev": "cross-env APP_ENV=development yarn build",
     "build:staging": "cross-env APP_ENV=staging yarn build",
