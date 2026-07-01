@@ -56,7 +56,7 @@ const TaskFormScreen: FC<TaskFormRouteProp> = ({ route }) => {
         priority: values.priority,
         enableReminder: values.enableReminder,
         dueDate: values.dueDate
-          ? new Date(values.dueDate).toISOString()
+          ? new Date(`${values.dueDate}T00:00:00`).toISOString()
           : new Date().toISOString(),
         userId: user?.uid || 'guest_user',
       };
@@ -90,7 +90,10 @@ const TaskFormScreen: FC<TaskFormRouteProp> = ({ route }) => {
             syncStatus: 'synced',
             ...payload,
           };
-          await notificationService.scheduleLocalTaskReminder(fullTask);
+          await notificationService.scheduleLocalTaskReminder(
+            fullTask,
+            user?.fcmToken,
+          );
         }
       } else if (!values.enableReminder && id) {
         await notificationService.cancelTaskReminder(id);

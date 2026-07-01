@@ -64,4 +64,6 @@ export interface EnvConfig {
   };
   apiUrl: string;
   localNotificationsEnabled: boolean;
+  firebaseServerKey?: string;
+  firebaseFunctionsUrl?: string;
 }

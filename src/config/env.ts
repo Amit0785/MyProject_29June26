@@ -13,6 +13,10 @@ export const ENV_DEV: EnvConfig = {
   },
   apiUrl: 'http://192.168.1.50:3000/v1',
   localNotificationsEnabled: true,
+  firebaseServerKey: process.env.FIREBASE_SERVER_KEY || '',
+  firebaseFunctionsUrl:
+    process.env.FIREBASE_FUNCTIONS_URL ||
+    'https://us-central1-myproject-c006d.cloudfunctions.net/sendTaskReminder',
 };
 
 export const ENV_STAGING: EnvConfig = {
@@ -27,6 +31,10 @@ export const ENV_STAGING: EnvConfig = {
   },
   apiUrl: 'https://api-staging.tasksync.com/v1',
   localNotificationsEnabled: true,
+  firebaseServerKey: process.env.FIREBASE_SERVER_KEY || '',
+  firebaseFunctionsUrl:
+    process.env.FIREBASE_FUNCTIONS_URL ||
+    'https://us-central1-myproject-c006d.cloudfunctions.net/sendTaskReminder',
 };
 
 export const ENV_PROD: EnvConfig = {
@@ -41,6 +49,10 @@ export const ENV_PROD: EnvConfig = {
   },
   apiUrl: 'https://api.tasksync.com/v1',
   localNotificationsEnabled: true,
+  firebaseServerKey: process.env.FIREBASE_SERVER_KEY || '',
+  firebaseFunctionsUrl:
+    process.env.FIREBASE_FUNCTIONS_URL ||
+    'https://us-central1-myproject-c006d.cloudfunctions.net/sendTaskReminder',
 };
 
 // Default setup based on compiler environment

@@ -63,6 +63,7 @@ const HomeScreen: FC = () => {
     syncingProgressMessage,
     theme,
   } = useAppSelector(state => state.tasks, shallowEqual);
+  const { user } = useAppSelector(state => state.auth, shallowEqual);
 
   const isDark = theme === 'dark';
 
@@ -110,13 +111,16 @@ const HomeScreen: FC = () => {
       if (isNowCompleted) {
         notificationService.cancelTaskReminder(task.id);
       } else {
-        notificationService.scheduleLocalTaskReminder({
-          ...task,
-          isCompleted: isNowCompleted,
-        });
+        notificationService.scheduleLocalTaskReminder(
+          {
+            ...task,
+            isCompleted: isNowCompleted,
+          },
+          user?.fcmToken,
+        );
       }
     },
-    [dispatch],
+    [dispatch, user?.fcmToken],
   );
 
   const deleteTask = useCallback(
