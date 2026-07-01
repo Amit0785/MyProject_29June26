@@ -56,7 +56,7 @@ const TaskFormScreen: FC<TaskFormRouteProp> = ({ route }) => {
         priority: values.priority,
         enableReminder: values.enableReminder,
         dueDate: values.dueDate
-          ? new Date(values.dueDate).toISOString()
+          ? new Date(`${values.dueDate}T00:00:00`).toISOString()
           : new Date().toISOString(),
         userId: user?.uid || 'guest_user',
       };

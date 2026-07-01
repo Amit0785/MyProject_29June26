@@ -1,8 +1,9 @@
 import { Task } from '../types';
 import notifee, { TriggerType, TimestampTrigger } from '@notifee/react-native';
+import { normalizeReminderDate } from '../utils/helpers/date';
 
 /**
- * Native Notification Service handles scheduling, cancelling, 
+ * Native Notification Service handles scheduling, cancelling,
  * and receiving push notifications (Local & FCM Cloud Server) using Notifee.
  */
 export class NotificationService {
@@ -24,12 +25,17 @@ export class NotificationService {
    */
   private configure() {
     console.log('[NotificationService] Registering default channels...');
-    notifee.createChannel({
-      id: 'default',
-      name: 'Default Channel',
-    }).catch(error => {
-      console.log('[NotificationService] Error creating notification channel:', error);
-    });
+    notifee
+      .createChannel({
+        id: 'default',
+        name: 'Default Channel',
+      })
+      .catch(error => {
+        console.log(
+          '[NotificationService] Error creating notification channel:',
+          error,
+        );
+      });
   }
 
   /**
@@ -52,20 +58,22 @@ export class NotificationService {
   public async scheduleLocalTaskReminder(task: Task): Promise<string | null> {
     if (!task.dueDate) return null;
 
-    const triggerDate = new Date(task.dueDate);
+    const triggerDate =
+      normalizeReminderDate(task.dueDate) ?? new Date(task.dueDate);
     const now = new Date();
 
-    // Prevent scheduling reminders for tasks due in the past
     if (triggerDate <= now) {
-      console.log(`[NotificationService] Task "${task.title}" is due in the past. Skipping alarm.`);
+      console.log(
+        `[NotificationService] Task "${task.title}" is due in the past. Skipping reminder.`,
+      );
       return null;
     }
 
-    console.log(`[NotificationService] Scheduling alarm for task "${task.title}" at: ${triggerDate.toLocaleString()}`);
+    const notificationId = `alarm_${task.id}`;
 
     try {
-      const notificationId = `alarm_${task.id}`;
-      
+      await this.cancelTaskReminder(task.id);
+
       const trigger: TimestampTrigger = {
         type: TriggerType.TIMESTAMP,
         timestamp: triggerDate.getTime(),
@@ -79,6 +87,7 @@ export class NotificationService {
           data: { taskId: task.id },
           android: {
             channelId: 'default',
+            importance: 4,
             pressAction: {
               id: 'default',
             },
@@ -90,9 +99,14 @@ export class NotificationService {
         trigger,
       );
 
+      console.log(
+        `[NotificationService] Scheduled local reminder for "${
+          task.title
+        }" at ${triggerDate.toString()}`,
+      );
       return notificationId;
     } catch (error) {
-      console.error('[NotificationService] Error scheduling alarm:', error);
+      console.error('[NotificationService] Error scheduling reminder:', error);
       return null;
     }
   }
@@ -101,7 +115,9 @@ export class NotificationService {
    * Cancels a scheduled task notification (e.g., if deleted or completed)
    */
   public async cancelTaskReminder(taskId: string): Promise<void> {
-    console.log(`[NotificationService] Cancelling local notification for task [${taskId}]`);
+    console.log(
+      `[NotificationService] Cancelling local notification for task [${taskId}]`,
+    );
     try {
       await notifee.cancelNotification(`alarm_${taskId}`);
     } catch (error) {
@@ -113,7 +129,9 @@ export class NotificationService {
    * (Bonus Feature) Configures Firebase Cloud Messaging background hooks
    */
   public registerFCMToken(userId: string) {
-    console.log(`[NotificationService] Registering device token on FCM Server for userId ${userId}`);
+    console.log(
+      `[NotificationService] Registering device token on FCM Server for userId ${userId}`,
+    );
     // Handled in notificationContext.tsx
   }
 }
