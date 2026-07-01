@@ -42,22 +42,29 @@ const TaskFormScreen: FC<TaskFormRouteProp> = ({ route }) => {
       category: existingTask?.category || 'work',
       priority: existingTask?.priority || 'medium',
       dueDate: existingTask?.dueDate
-        ? existingTask.dueDate.substring(0, 10)
+        ? existingTask.dueDate.substring(0, 16)
         : '',
       enableReminder: existingTask?.enableReminder || false,
     },
     enableReinitialize: true,
     validationSchema: taskValidationSchema,
     onSubmit: async values => {
+      const normalizedDueDate = values.dueDate?.trim() || '';
+      const parsedDueDate = normalizedDueDate
+        ? new Date(
+            normalizedDueDate.includes('T') || normalizedDueDate.includes(' ')
+              ? normalizedDueDate.replace(' ', 'T')
+              : `${normalizedDueDate}T00:00:00`,
+          )
+        : new Date();
+
       const payload = {
         title: values.title.trim(),
         description: values.description,
         category: values.category,
         priority: values.priority,
         enableReminder: values.enableReminder,
-        dueDate: values.dueDate
-          ? new Date(`${values.dueDate}T00:00:00`).toISOString()
-          : new Date().toISOString(),
+        dueDate: parsedDueDate.toISOString(),
         userId: user?.uid || 'guest_user',
       };
 
@@ -249,7 +256,7 @@ const TaskFormScreen: FC<TaskFormRouteProp> = ({ route }) => {
           DUE DATE
         </Text>
         <TextInputComponent
-          placeholder="YYYY-MM-DD"
+          placeholder="YYYY-MM-DD HH:mm"
           placeholderTextColor={isDark ? Colors.slate500 : Colors.slate400}
           value={formik.values.dueDate}
           onChangeText={formik.handleChange('dueDate')}
