@@ -26,9 +26,20 @@ export const taskValidationSchema = Yup.object().shape({
   priority: Yup.string().oneOf(['low', 'medium', 'high']).required(),
   dueDate: Yup.string()
     .nullable()
-    .test('is-date', 'Due date must be in YYYY-MM-DD format', value => {
-      if (!value) return true;
-      return /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(Date.parse(value));
-    }),
+    .test(
+      'is-date',
+      'Due date must be in YYYY-MM-DD or YYYY-MM-DD HH:mm format',
+      value => {
+        if (!value) return true;
+
+        const dateOnlyRegex = /^\d{4}-\d{2}-\d{2}$/;
+        const dateTimeRegex = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}$/;
+
+        return (
+          (dateOnlyRegex.test(value) || dateTimeRegex.test(value)) &&
+          !isNaN(Date.parse(value.replace(' ', 'T')))
+        );
+      },
+    ),
   enableReminder: Yup.boolean().optional(),
 });
